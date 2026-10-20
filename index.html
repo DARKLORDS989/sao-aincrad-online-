@@ -1,0 +1,629 @@
+
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>SAO: Aincrad Online</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#101827;color:#eef5ff;font:15px Arial,sans-serif}
+#loginScreen{max-width:440px;margin:9vh auto;padding:18px}#gameRoot{display:none}#loginError{color:#ff8293;min-height:20px}.login-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+header{padding:16px;text-align:center;background:#19283b;color:#ffd166;font-size:23px;font-weight:bold}
+main{max-width:900px;margin:auto;padding:10px}
+.panel{background:#1b293c;border:1px solid #344b66;border-radius:12px;padding:12px;margin-bottom:10px}
+.stats{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+button{background:#304966;color:white;border:1px solid #56718f;border-radius:9px;padding:11px;cursor:pointer}
+button:active{transform:scale(.98)}
+button:disabled{opacity:.4}
+.actions{display:grid;grid-template-columns:repeat(2,1fr);gap:7px}
+.floor-actions{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:10px}
+.tabs{display:flex;gap:5px;overflow:auto;margin:10px 0}
+.tabs button{white-space:nowrap}
+.page{display:none}.page.active{display:block}
+.bar{height:9px;background:#09111c;border-radius:8px;overflow:hidden;margin:5px 0}
+.bar span{display:block;height:100%;background:#4ee09a;width:100%}
+.hp span{background:#ff647c}.mp span{background:#64b5ff}
+.item{display:flex;align-items:center;justify-content:space-between;gap:8px;background:#111c2b;border-radius:8px;padding:9px;margin:6px 0}
+.rarity{display:inline-block;font-size:11px;font-weight:bold;padding:3px 7px;border-radius:6px;margin:3px 4px 0 0;border:1px solid currentColor}
+.common{color:#c5d0df}.uncommon{color:#65e6a3}.rare{color:#62b7ff}.epic{color:#d59aff}.legendary{color:#ffd166;text-shadow:0 0 8px #b87822}
+.rarity-legend{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}.rarity-legend span{font-size:12px}
+.premium-panel{border-color:#b98aff;background:linear-gradient(135deg,#251c3b,#18243a)}.gem{color:#d9a6ff;font-weight:bold}.vip-badge{display:inline-block;padding:4px 8px;border:1px solid #ffd166;border-radius:8px;color:#ffd166;font-weight:bold;margin:3px}.promo-row{display:grid;grid-template-columns:1fr auto;gap:6px;align-items:center}.premium-note{padding:9px;background:#111827;border-radius:8px;margin:8px 0}.qty{display:inline-block;color:#fff;background:#405a79;border-radius:7px;padding:3px 7px;font-weight:bold;margin-top:4px}.vip{color:#ffd166;font-weight:bold}
+.item div{flex:1;min-width:0}
+small{color:#a9bdd4}
+#battleLog{height:145px;overflow:auto;font-size:13px}
+#battleLog div{padding:4px;border-bottom:1px solid #26374b}
+input,select{width:100%;padding:10px;background:#101827;color:white;border:1px solid #425b77;border-radius:8px;margin:4px 0}
+@media(min-width:650px){.stats{grid-template-columns:repeat(4,1fr)}}
+
+/* SAO 3D-inspired visual upgrade */
+:root{--cyan:#58dcff;--gold:#ffd778;--glass:rgba(8,20,39,.82)}
+body{
+ background:radial-gradient(ellipse at 50% -10%,#244f8b 0,#101b32 38%,#070d19 100%);
+ background-attachment:fixed;
+}
+header{
+ position:relative;overflow:hidden;isolation:isolate;
+ background:linear-gradient(115deg,rgba(5,20,46,.97),rgba(18,58,103,.94),rgba(7,17,38,.98));
+ border-bottom:1px solid #4acbff;box-shadow:0 8px 28px #0008,inset 0 -1px #9deaff55;
+ text-shadow:0 0 14px #39bfff;letter-spacing:1px
+}
+header:before{
+ content:"";position:absolute;inset:-70% -20%;z-index:-1;
+ background:repeating-linear-gradient(115deg,transparent 0 42px,#72d9ff12 43px 44px);
+ transform:perspective(500px) rotateX(55deg);animation:saoGrid 12s linear infinite
+}
+header:after{content:"⚔  A I N C R A D   O N L I N E  ⚔";display:block;font-size:10px;color:#8ee8ff;letter-spacing:3px;margin-top:7px}
+@keyframes saoGrid{to{background-position:0 220px}}
+main{max-width:980px}
+.panel{
+ background:linear-gradient(145deg,rgba(26,48,77,.94),rgba(9,20,38,.96));
+ border:1px solid #3b7199;border-radius:13px;
+ box-shadow:0 9px 22px #0005,inset 0 1px #a4e8ff12;
+ backdrop-filter:blur(5px)
+}
+button{
+ background:linear-gradient(180deg,#315d85,#17314f);
+ border:1px solid #5d9dc8;box-shadow:inset 0 1px #b6edff30,0 3px 0 #091522;
+ transition:transform .15s,filter .15s,box-shadow .15s
+}
+button:hover{filter:brightness(1.18);box-shadow:0 0 14px #3ccaff30}
+button:active{transform:translateY(2px);box-shadow:0 1px 0 #091522}
+input,select,textarea{
+ background:#091426!important;color:#eef8ff!important;border:1px solid #42688b!important;
+ border-radius:8px!important;padding:10px!important;max-width:100%
+}
+.tabs button{border-radius:8px 8px 4px 4px}
+.tabs button.active{background:linear-gradient(180deg,#168bb5,#15436c);border-color:#78e4ff;box-shadow:0 0 13px #1dbdff44}
+.bar{border:1px solid #35506d;box-shadow:inset 0 2px 4px #0008}
+.item{border:1px solid #2d4a68;background:linear-gradient(100deg,#0b1728,#14263b)}
+#aincradScene{
+ position:relative;isolation:isolate;overflow:hidden;min-height:205px;margin:10px 0 13px;
+ border:1px solid #5bcfff;border-radius:15px;
+ background:linear-gradient(180deg,#5b9bd3 0%,#b5d9ef 38%,#547e9b 39%,#1b3853 100%);
+ box-shadow:0 12px 30px #0008,inset 0 0 28px #5bcfff22
+}
+#aincradScene .scene-sky{
+ position:absolute;inset:0;z-index:-2;
+ background:radial-gradient(ellipse at 78% 16%,#fff9 0 3%,transparent 17%),
+ radial-gradient(ellipse at 18% 28%,#fff8 0 5%,transparent 19%),
+ linear-gradient(#4d9bd8,#b9d9ee 54%,#527b98 55%,#152a43)
+}
+#aincradScene .floating-island{
+ position:absolute;left:8%;right:8%;top:65px;height:84px;
+ background:linear-gradient(135deg,#477f62,#173b36 48%,#091b2b);
+ clip-path:polygon(0 0,100% 0,84% 32%,71% 40%,62% 100%,51% 71%,43% 100%,32% 48%,16% 35%);
+ filter:drop-shadow(0 12px 5px #071526aa)
+}
+#aincradScene .castle{
+ position:absolute;left:50%;top:15px;transform:translateX(-50%);
+ width:90px;height:105px;background:linear-gradient(90deg,#243b56,#c3d5e1 45%,#38516c);
+ clip-path:polygon(35% 0,65% 0,69% 15%,82% 15%,88% 30%,100% 30%,100% 100%,0 100%,0 30%,12% 30%,18% 15%,31% 15%);
+ filter:drop-shadow(0 0 9px #e8f9ff99)
+}
+#aincradScene .castle:before{content:"";position:absolute;left:42%;top:0;width:16%;height:100%;background:#e5f5ff77}
+#aincradScene .castle:after{content:"";position:absolute;inset:28px 12px 0;background:repeating-linear-gradient(90deg,transparent 0 12px,#172c43 13px 17px),repeating-linear-gradient(0deg,transparent 0 17px,#172c43 18px 22px)}
+#aincradScene .scene-ground{
+ position:absolute;bottom:-2px;left:-5%;width:110%;height:65px;
+ background:linear-gradient(170deg,#5c9d73,#183f3e 65%,#10283c);
+ clip-path:polygon(0 65%,12% 35%,25% 52%,43% 15%,58% 50%,78% 23%,100% 57%,100% 100%,0 100%)
+}
+#aincradScene .scene-title{position:absolute;left:14px;top:12px;color:#fff;text-shadow:0 2px 7px #00172e;font-weight:bold;font-size:17px}
+#aincradScene .scene-subtitle{position:absolute;left:14px;top:36px;color:#e0f7ff;text-shadow:0 2px 5px #00172e;font-size:11px}
+#aincradScene .scene-player{position:absolute;bottom:18px;left:50%;transform:translateX(-50%);font-size:38px;filter:drop-shadow(0 5px 3px #001)}
+#aincradScene .scene-badge{position:absolute;right:10px;bottom:10px;background:#07182bd9;border:1px solid #74dfff;border-radius:8px;padding:6px 8px;font-size:11px;color:#a9edff}
+@media(min-width:650px){#aincradScene{min-height:250px}#aincradScene .castle{width:120px;height:140px}#aincradScene .floating-island{top:85px;height:105px}#aincradScene .scene-player{font-size:48px}}
+
+</style>
+</head>
+<body>
+<section id="loginScreen" class="panel">
+ <h2 style="text-align:center;color:#ffd166">⚔️ SAO: AINCRAD ONLINE</h2>
+ <p>Войди в свой локальный профиль или создай новый.</p>
+ <label for="loginName">Логин</label><input id="loginName" autocomplete="username" maxlength="24" placeholder="Придумай логин">
+ <label for="loginPassword">Пароль</label><input id="loginPassword" type="password" autocomplete="current-password" minlength="4" maxlength="64" placeholder="Не используй настоящий пароль">
+ <div class="login-actions"><button id="loginBtn">Войти</button><button id="registerBtn">Создать профиль</button></div>
+ <p id="loginError" role="status"></p>
+ <small>Это локальный вход для этой копии игры на этом устройстве, а не защищённый онлайн-аккаунт. Не вводи настоящий пароль от других сервисов.</small>
+</section>
+<div id="gameRoot">
+<header>⚔️ SAO: AINCRAD ONLINE</header>
+
+<div id="aincradScene" role="img" aria-label="Стилизованный летающий замок Айнкрад">
+  <div class="scene-sky"></div><div class="floating-island"></div><div class="castle"></div><div class="scene-ground"></div>
+  <div class="scene-title">SAO · АЙНКРАД</div>
+  <div class="scene-subtitle">МИР НАД ОБЛАКАМИ • ЭТАЖИ • БОССЫ</div>
+  <div class="scene-player">🗡️</div>
+  <div class="scene-badge">✦ 3D STYLE · ONLINE</div>
+</div>
+
+<main>
+<div class="stats">
+ <div class="panel">❤️ Здоровье <b id="hpText"></b><div class="bar hp"><span id="hpBar"></span></div></div>
+ <div class="panel">🔷 Мана <b id="mpText"></b><div class="bar mp"><span id="mpBar"></span></div></div>
+ <div class="panel">⭐ Уровень <b id="levelText"></b><br><small id="xpText"></small></div>
+ <div class="panel">🪙 Монеты <b id="coinsText"></b><br><small id="floorText"></small></div>
+</div>
+<div class="tabs">
+ <button data-tab="battle">⚔️ Бой</button>
+ <button data-tab="character">🧙 Персонаж</button>
+ <button data-tab="inventory">🎒 Инвентарь</button>
+ <button data-tab="shop">🏪 Магазин</button>
+ <button data-tab="forge">⚒️ Кузница</button>
+ <button data-tab="premium">💎 Премиум</button>
+  <button data-tab="online">🌐 Онлайн</button>
+ <button data-tab="admin" id="adminTab" style="display:none">🛠️ Админ</button>
+</div>
+<section id="battle" class="page active">
+ <div class="panel">
+  <h3 id="enemyName">Лесной волк</h3>
+  <div style="font-size:48px" id="enemyEmoji">🐺</div>
+  <div class="bar hp"><span id="enemyBar"></span></div>
+  <small id="enemyHp"></small>
+  <div class="actions" style="margin-top:10px">
+   <button id="attack">🗡️ Атаковать</button>
+   <button id="skill">✨ Навык</button>
+   <button id="potion">🧪 Зелье</button>
+   <button id="rest">🛌 Отдых</button>
+   <button id="boss">👑 Вызвать босса</button>
+   <button id="auto">▶️ Автобой: выкл.</button>
+  </div>
+  <div class="floor-actions">
+   <button id="nextFloor">➡️ Следующий этаж</button>
+   <button id="currentFloor">📍 Текущий этаж</button>
+  </div>
+  <p><small>Победи 3 монстров, чтобы открыть следующий этаж. На каждом пятом этаже можно вызвать босса.</small></p>
+ </div>
+ <div class="panel"><b>Журнал событий</b><div id="battleLog"></div></div>
+</section>
+<section id="character" class="page">
+ <div class="panel">
+  <h3>Персонаж</h3>
+  <p>Раса</p><select id="race"><option>Человек</option><option>Эльф</option><option>Тёмный эльф</option><option>Дварф</option></select>
+  <p>Профессия</p><select id="job"><option>Мечник</option><option>Паладин</option><option>Ассасин</option><option>Лучник</option><option>Маг</option><option>Кузнец</option><option>Алхимик</option><option>Командир</option></select>
+  <button id="applyCharacter">Применить</button>
+  <div id="attributes"></div>
+  <div class="panel" style="background:#111c2b"><b>Экипированное снаряжение</b><div id="equippedStats"></div></div>
+  <button id="upgrade">⬆️ Улучшить навык</button>
+ </div>
+</section>
+<section id="inventory" class="page">
+ <div class="panel"><h3>🎒 Инвентарь и экипировка</h3><div id="inventoryList"></div></div>
+</section>
+<section id="shop" class="page">
+ <div class="panel"><h3>🏪 Магазин</h3><p><small>Шанс выпадения редкости: обычный 60%, необычный 25%, редкий 10%, эпический 4%, легендарный 1%.</small></p><input id="search" placeholder="Поиск предметов"><div id="shopList"></div></div>
+</section>
+<section id="online" class="page"><div class="panel"><h3>🌐 Онлайн Айнкрада</h3>
+    <p>Адрес игрового сервера</p><input id="serverUrl" type="url" placeholder="https://твой-worker.workers.dev">
+    <label>Логин</label><input id="onlineUser" maxlength="24" placeholder="Логин">
+    <label>Пароль</label><input id="onlinePass" type="password" maxlength="100" placeholder="Пароль (от 8 символов)">
+    <div class="actions"><button id="onlineRegister">Создать онлайн-аккаунт</button><button id="onlineLogin">Войти онлайн</button></div>
+    <p id="onlineMessage" role="status"></p><h4>🏆 Рейтинг игроков</h4><button id="refreshRank">Обновить рейтинг</button><div id="onlineRank"></div>
+    <h4>💬 Общий чат</h4><div id="onlineChat"></div><input id="chatMessage" maxlength="300" placeholder="Сообщение"><button id="sendChat">Отправить</button>
+    </div></section>
+<section id="premium" class="page">
+ <div class="panel premium-panel"><h3>💎 Премиум Айнкрада</h3><p>Кристаллы: <b class="gem" id="gemText">0</b> 💎 · Статус: <b id="vipText">Обычный игрок</b></p><p><small>Это внутриигровой премиум без реальных платежей. Кристаллы можно получать за ежедневный вход и победы над боссами.</small></p><button id="dailyGem">🎁 Забрать ежедневные 5 кристаллов</button><div class="premium-note"><b>👑 VIP-привилегии</b><div id="vipBenefits"></div></div><h4>🎟️ Промокод</h4><div class="promo-row"><input id="promoCode" maxlength="32" placeholder="Введи промокод"><button id="redeemPromo">Активировать</button></div><p id="promoMessage" role="status"></p><div id="premiumList"></div></div>
+</section>
+<section id="forge" class="page">
+ <div class="panel"><h3>⚒️ Кузница Айнкрада</h3><p><small>Создавай снаряжение из материалов, найденных в боях. Редкие рецепты требуют редкие осколки.</small></p><div id="materials"></div><div id="forgeList"></div></div>
+</section>
+<section id="admin" class="page">
+ <div class="panel"><h3>🛠️ Панель администратора</h3>
+  <p><small>Работает только с профилями, сохранёнными в этом же браузере/устройстве. Это не серверная админ-панель.</small></p>
+  <label for="adminUser">Профиль игрока</label><select id="adminUser"></select>
+  <label for="adminCoins">Монеты</label><input id="adminCoins" type="number" min="0" step="1" value="0">
+  <label for="adminGems">Премиум-кристаллы</label><input id="adminGems" type="number" min="0" step="1" value="0">
+  <label for="adminXp">Опыт (XP)</label><input id="adminXp" type="number" min="0" step="1" value="0">
+  <label for="adminLevel">Уровень</label><input id="adminLevel" type="number" min="1" max="999" step="1" value="1">
+  <label for="adminVipDays">Выдать VIP на дней</label><input id="adminVipDays" type="number" min="0" max="3650" step="1" value="0">
+  <label for="adminVipTier">Уровень VIP (1–5)</label><input id="adminVipTier" type="number" min="1" max="5" step="1" value="1">
+  <button id="adminLoad">Загрузить данные</button> <button id="adminApply">Применить изменения</button>
+  <p id="adminMessage" role="status"></p><div id="adminAccounts"></div>
+ </div>
+</section>
+<div class="panel">
+ <button id="save">💾 Сохранить</button>
+ <button id="reset">🔄 Новая игра</button>
+ <p><small>Прогресс сохраняется в локальном хранилище браузера.</small></p>
+</div>
+</main>
+</div>
+<script>
+"use strict";
+const $=id=>document.getElementById(id);
+const random=(a,b)=>Math.floor(Math.random()*(b-a+1))+a;
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2);
+const ADMIN_NICK="Pollag";
+const ADMIN_PASSWORD="9379992";
+const monsters=[
+ {name:"Лесной волк",emoji:"🐺",hp:32,atk:5,xp:15,coins:10},
+ {name:"Гоблин",emoji:"👺",hp:36,atk:7,xp:20,coins:15},
+ {name:"Скелет-воин",emoji:"💀",hp:48,atk:8,xp:24,coins:18},
+ {name:"Орк",emoji:"👹",hp:65,atk:10,xp:32,coins:25}
+];
+const bases=[
+ ["Короткий меч","weapon",25,3,"🗡️"],
+ ["Стальной меч","weapon",70,7,"⚔️"],
+ ["Двуручный меч","weapon",100,10,"🗡️"],
+ ["Лук охотника","weapon",55,5,"🏹"],
+ ["Кожаная броня","armor",30,2,"🥋"],
+ ["Кольчуга","armor",75,5,"🦺"],
+ ["Стальной доспех","armor",120,9,"🛡️"],
+ ["Зелье здоровья","potion",20,35,"🧪"],
+ ["Зелье маны","mana",25,30,"🔷"],
+ ["Железная руда","material",12,0,"⛏️"],
+ ["Кристалл","material",35,0,"💎"],
+ ["Кожа монстра","material",10,0,"🟫"],
+ ["Древесина","material",8,0,"🪵"],
+ ["Редкий осколок","material",90,0,"🔹"],
+ ["Мифриловая руда","material",65,0,"🪨"],
+ ["Клык дракона","material",110,0,"🦷"],
+ ["Ядро голема","material",95,0,"🔮"],
+ ["Звёздная пыль","material",130,0,"✨"],
+ ["Кристалл Айнкрада","material",180,0,"💠"],
+ ["Кинжал","weapon",35,4,"🔪"],
+ ["Посох мага","weapon",65,6,"🪄"],
+ ["Боевой топор","weapon",80,8,"🪓"],
+ ["Шлем","armor",40,2,"⛑️"],
+ ["Щит","armor",60,4,"🛡️"],
+ ["Большое зелье","potion",45,80,"⚗️"]
+];
+const rarities=[["Обычный",1,"common",60],["Необычный",1.5,"uncommon",25],["Редкий",2.5,"rare",10],["Эпический",4,"epic",4],["Легендарный",7,"legendary",1]];
+const rarityNames={common:"Обычный",uncommon:"Необычный",rare:"Редкий",epic:"Эпический",legendary:"Легендарный"};
+const rarityChances={common:60,uncommon:25,rare:10,epic:4,legendary:1};
+function rarityTag(rarity){const r=rarity||"common";return '<span class="rarity '+r+'">'+(rarityNames[r]||"Обычный")+' · шанс '+(rarityChances[r]??60)+'%</span>'}
+function weightedDrop(items){let total=items.reduce((n,it)=>n+(rarityChances[it.rarity]||60),0),roll=Math.random()*total;for(const it of items){roll-=rarityChances[it.rarity]||60;if(roll<=0)return it}return items[items.length-1]}
+const shop=[];
+bases.forEach((b,i)=>rarities.forEach((r,j)=>shop.push({
+ id:"i"+i+"_"+j,name:b[1]==="material"?b[0]:r[0]+" "+b[0],type:b[1],price:Math.round(b[2]*r[1]*(b[1]==="material"?3:1)),
+ power:Math.max(b[1]==="material"?0:1,Math.round(b[3]*r[1])),emoji:b[4],rarity:r[2],rarityChance:r[3]
+})));
+const recipes=[
+ {name:"Железный меч кузнеца",emoji:"⚔️",type:"weapon",power:12,price:90,rarity:"uncommon",needs:{"Железная руда":5,"Древесина":2}},
+ {name:"Кожаный нагрудник",emoji:"🥋",type:"armor",power:7,price:70,rarity:"uncommon",needs:{"Кожа монстра":6,"Железная руда":2}},
+ {name:"Мифриловая катана",emoji:"🗡️",type:"weapon",power:24,price:220,rarity:"rare",needs:{"Мифриловая руда":5,"Редкий осколок":2,"Древесина":3}},
+ {name:"Щит голема",emoji:"🛡️",type:"armor",power:18,price:200,rarity:"rare",needs:{"Ядро голема":3,"Железная руда":6}},
+ {name:"Клинок драконоборца",emoji:"🐉",type:"weapon",power:34,price:450,rarity:"epic",needs:{"Клык дракона":4,"Кристалл":5,"Редкий осколок":4}},
+ {name:"Доспех звёздного рыцаря",emoji:"✨",type:"armor",power:30,price:420,rarity:"epic",needs:{"Звёздная пыль":4,"Мифриловая руда":6,"Кристалл Айнкрада":1}},
+ {name:"Легендарный клинок Айнкрада",emoji:"🌟",type:"weapon",power:50,price:800,rarity:"legendary",needs:{"Кристалл Айнкрада":3,"Клык дракона":6,"Звёздная пыль":5,"Редкий осколок":8}}
+];
+function stackKey(x){return [x.name,x.type,x.rarity||"common",x.price||0].join("|")}
+function addItem(item){
+ const copy={...item};
+ if(copy.type==="material"){
+  const existing=p.inventory.find(x=>x.type==="material"&&stackKey(x)===stackKey(copy));
+  if(existing){existing.qty=(existing.qty||1)+(copy.qty||1);return existing}
+  copy.qty=copy.qty||1;copy.uid=copy.uid||uid();p.inventory.push(copy);return copy;
+ }
+ copy.qty=1;copy.uid=copy.uid||uid();p.inventory.push(copy);return copy;
+}
+function consolidateInventory(){
+ if(!Array.isArray(p.inventory))p.inventory=[];
+ const old=p.inventory;p.inventory=[];
+ old.forEach(it=>{if(it&&typeof it==="object")addItem({...it,qty:it.qty||1})});
+}
+function materialCount(name){return p.inventory.filter(x=>x.name===name&&x.type==="material").reduce((n,x)=>n+(x.qty||1),0)}
+function craft(index){
+ const r=recipes[index];if(!r)return;
+ for(const [name,count] of Object.entries(r.needs)){if(materialCount(name)<count){log("Не хватает материалов для: "+r.name);return}}
+ for(const [name,count] of Object.entries(r.needs)){
+  let left=count;
+  for(let i=p.inventory.length-1;i>=0&&left>0;i--){const it=p.inventory[i];if(it.name===name&&it.type==="material"){
+   const have=it.qty||1,take=Math.min(have,left);it.qty=have-take;left-=take;if(it.qty<=0)p.inventory.splice(i,1);
+  }}
+ }
+ addItem({id:"crafted_"+uid(),uid:uid(),name:r.name,type:r.type,price:r.price,power:r.power,emoji:r.emoji,rarity:r.rarity});
+ log("В кузнице создано: "+r.name+" (сила "+r.power+").");render();
+}
+function renderForge(){
+ const names=[...new Set([...bases.filter(b=>b[1]==="material").map(b=>b[0]),"Мифриловая руда","Клык дракона","Ядро голема","Звёздная пыль","Кристалл Айнкрада"])];
+ $("materials").innerHTML="<b>Материалы:</b><div>"+names.map(n=>esc(n)+": "+materialCount(n)).join(" · ")+"</div>";
+ $("forgeList").innerHTML=recipes.map((r,i)=>'<div class="item"><div>'+r.emoji+' <b>'+esc(r.name)+'</b><br><small>Сила '+r.power+' · Требуется: '+Object.entries(r.needs).map(([n,c])=>esc(n)+" ×"+c).join(", ")+'</small></div><button data-craft="'+i+'">Создать</button></div>').join("");
+}
+function fresh(){
+ return {level:1,xp:0,coins:100,hp:100,maxHp:100,mp:40,maxMp:40,
+ floor:1,kills:0,floorKills:0,skill:1,points:0,potions:3,auto:false,tick:0,
+ race:"Человек",job:"Мечник",inventory:[],weapon:null,armor:null,gems:50,vipUntil:0,vipTier:0,lastGemDay:"",redeemedPromos:[],
+ enemy:null,log:["Добро пожаловать в Айнкрад!"],bossKills:0};
+}
+let p=fresh();
+function attackPower(){return 8+p.level*2+p.skill*2+(p.weapon?.power||0)+
+ (p.job==="Мечник"?3:p.job==="Ассасин"?5:p.job==="Лучник"?3:0)}
+function defense(){return 2+Math.floor(p.level/2)+(p.armor?.power||0)+(p.job==="Паладин"?4:0)}
+function log(s){p.log.push(s);if(p.log.length>60)p.log.shift();renderLog();saveData()}
+function renderLog(){$("battleLog").innerHTML=p.log.map(x=>"<div>"+esc(x)+"</div>").join("");$("battleLog").scrollTop=$("battleLog").scrollHeight}
+function esc(s){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+function newEnemy(boss=false){
+ if(boss){let hp=180+p.floor*25;return {name:"Страж Айнкрада",emoji:"👑",hp,maxHp:hp,atk:12+p.floor*2,xp:120+p.floor*15,coins:100+p.floor*10,boss:true}}
+ let m=monsters[random(0,monsters.length-1)],scale=1+(p.floor-1)*.16,hp=Math.round(m.hp*scale);
+ return {...m,hp,maxHp:hp,atk:Math.round(m.atk*scale),boss:false};
+}
+function spawn(boss=false){p.enemy=newEnemy(boss);render()}
+function enemyHit(){
+ if(!p.enemy)return;
+ let d=Math.max(1,p.enemy.atk-defense()+random(-1,3));p.hp-=d;
+ log(p.enemy.emoji+" наносит "+d+" урона.");
+ if(p.hp<=0){p.hp=1;p.auto=false;p.coins=Math.max(0,p.coins- Math.ceil(p.coins*.08));log("Ты потерял сознание. Осталось 1 HP; потеряно немного монет.")}
+}
+function win(){
+ const e=p.enemy;if(!e)return;
+ p.kills++;p.floorKills=(p.floorKills||0)+1;
+ const isVip=(p.vipUntil||0)>Date.now(), vipBonus=isVip?(1.25+0.05*Math.max(0,(p.vipTier||1)-1)):1, xpReward=Math.round(e.xp*vipBonus), coinReward=Math.round(e.coins*vipBonus);
+ p.xp+=xpReward;p.coins+=coinReward;
+ log("Победа! +"+xpReward+" XP, +"+coinReward+" монет."+(isVip?" Премиум-бонус включён.":""));
+ if(e.boss){p.bossKills++;p.gems=(p.gems||0)+5;log("Награда босса: +5 премиум-кристаллов 💎");p.floor++;p.floorKills=0;log("Босс повержен! Ты перешёл на этаж "+p.floor+".")}
+ if(Math.random()<.8){
+  let drops=shop.filter(it=>it.type!="potion"&&it.type!="mana");
+  let it=weightedDrop(drops);addItem({...it,uid:uid()});log("Найден предмет: "+it.name);
+ }
+ if(Math.random()<.38){
+  let mats=shop.filter(it=>it.type==="material");let mat=weightedDrop(mats);
+  addItem({...mat,uid:uid()});log("Найден материал: "+mat.name);
+ }
+ const rareMats=[
+  {name:"Мифриловая руда",emoji:"🔩",chance:.16},
+  {name:"Клык дракона",emoji:"🐉",chance:e.boss?.65:.015},
+  {name:"Ядро голема",emoji:"🔮",chance:e.boss?.55:.03},
+  {name:"Звёздная пыль",emoji:"✨",chance:e.boss?.45:.015},
+  {name:"Кристалл Айнкрада",emoji:"💠",chance:e.boss?.3:.005}
+ ];
+ rareMats.forEach(m=>{if(Math.random()<m.chance){addItem({uid:uid(),name:m.name,type:"material",price:60,power:0,emoji:m.emoji,rarity:m.chance>=.3?"epic":"rare"});log("Редкий материал найден: "+m.name)}});
+ while(p.xp>=p.level*100){p.xp-=p.level*100;p.level++;p.maxHp+=12;p.maxMp+=4;p.hp=p.maxHp;p.mp=p.maxMp;p.points++;log("Новый уровень: "+p.level)}
+ p.enemy=null;render();saveData();
+}
+function hit(skill=false){
+ if(!p.enemy)spawn();
+ if(skill&&p.mp<10){log("Недостаточно маны!");return}
+ if(skill)p.mp-=10;
+ let critical=Math.random()<(p.job==="Ассасин"?.28:.1);
+ let damage=skill?Math.round(attackPower()*(1.8+p.skill*.15))+random(2,7):attackPower()+random(0,5);
+ if(critical)damage*=2;
+ if(p.job==="Маг"&&p.mp>=5&&!skill){p.mp-=5;damage+=Math.round(p.level*1.5)}
+ p.enemy.hp-=damage;log((critical?"Критический удар! ":"")+"Ты наносишь "+damage+" урона.");
+ if(p.enemy.hp<=0){win();return}
+ enemyHit();render();
+}
+function potion(){
+ if(p.potions<=0){log("Зелья закончились. Купи их в магазине.");return}
+ p.potions--;p.hp=Math.min(p.maxHp,p.hp+45);p.mp=Math.min(p.maxMp,p.mp+20);log("Зелье восстановило здоровье и ману.");render();
+}
+function rest(){p.hp=Math.min(p.maxHp,p.hp+Math.round(p.maxHp*.35));p.mp=Math.min(p.maxMp,p.mp+Math.round(p.maxMp*.35));p.auto=false;log("Ты отдохнул.");render()}
+function boss(){if(p.floor%5!==0){log("Босс доступен на каждом пятом этаже.");return}if(p.enemy&&p.enemy.boss){log("Босс уже находится перед тобой!");return}p.enemy=newEnemy(true);log("Появился босс!");render()}
+function nextFloor(){
+ if(p.floorKills<3){log("Чтобы перейти дальше, победи ещё "+(3-p.floorKills)+" монстров на этом этаже.");return}
+ if(p.floor%5===0&&p.bossKills<Math.floor(p.floor/5)){log("Сначала победи босса этого этажа!");return}
+ p.floor++;p.floorKills=0;p.enemy=newEnemy();p.hp=Math.min(p.maxHp,p.hp+Math.ceil(p.maxHp*.2));p.mp=Math.min(p.maxMp,p.mp+Math.ceil(p.maxMp*.2));
+ log("Ты перешёл на этаж "+p.floor+". Здоровье и мана немного восстановлены.");render();
+}
+function buy(id){
+ let it=shop.find(x=>x.id===id);if(!it)return;
+ if(p.coins<it.price){log("Не хватает монет.");return}
+ p.coins-=it.price;
+ if(it.type==="potion")p.potions+=it.name.includes("Большое")?3:1;
+ else if(it.type==="mana")p.mp=Math.min(p.maxMp,p.mp+30);
+ else addItem({...it,uid:uid()});
+ log("Куплено: "+it.name);render();
+}
+function sell(id){
+ let i=p.inventory.findIndex(x=>x.uid===id);if(i<0)return;
+ let it=p.inventory[i],price=Math.max(1,Math.floor(it.price*(it.type==="material"?.25:.5)));
+ if(it.type==="material"&&(it.qty||1)>1){it.qty--; }else{p.inventory.splice(i,1)}
+ p.coins+=price;log("Продано 1 шт.: "+it.name+" за "+price+" монет.");render();
+}
+function equip(id){
+ let i=p.inventory.findIndex(x=>x.uid===id);if(i<0)return;
+ let it=p.inventory[i];if(!["weapon","armor"].includes(it.type))return;
+ let slot=it.type,old=p[slot];p[slot]=it;p.inventory.splice(i,1);if(old)p.inventory.push(old);
+ log("Экипировано: "+it.name);render();
+}
+function upgrade(){if(p.points<=0){log("Нет очков навыков. Получай уровни.");return}p.points--;p.skill++;log("Навык улучшен до "+p.skill);render()}
+const premiumItems=[
+ {id:"vip7",name:"VIP на 7 дней",emoji:"👑",price:80,desc:"+25% монет и опыта за бои на 7 дней."},
+ {id:"chest",name:"Премиум-сундук",emoji:"🎁",price:25,desc:"Случайное редкое, эпическое или легендарное снаряжение."},
+ {id:"coins",name:"Мешок 1000 монет",emoji:"🪙",price:30,desc:"1000 игровых монет."},
+ {id:"blade",name:"Клинок премиум-рыцаря",emoji:"🌠",price:120,desc:"Легендарное оружие, сила +42."},
+  {id:"potionpack",name:"Набор зелий",emoji:"🧪",price:15,desc:"10 зелий здоровья."},
+  {id:"armor",name:"Доспех лунного стража",emoji:"🌙",price:95,desc:"Эпическая броня, защита +35."},
+  {id:"xp",name:"Свиток опыта",emoji:"📜",price:20,desc:"Даёт 250 опыта."},
+  {id:"gems100",name:"Сундук кристаллов",emoji:"🔮",price:180,desc:"Получить 100 премиум-кристаллов."}
+];
+function buyPremium(id){
+ const it=premiumItems.find(x=>x.id===id);if(!it)return;
+ if((p.gems||0)<it.price){log("Не хватает премиум-кристаллов 💎.");return}
+ p.gems-=it.price;
+ if(id==="vip7"){p.vipUntil=Math.max(Date.now(),p.vipUntil||0)+7*24*60*60*1000;log("Активирован VIP на 7 дней!")}
+ else if(id==="xp"){
+  const gained=250;let levels=0;p.xp=(Number(p.xp)||0)+gained;
+  while(p.xp>=p.level*100){p.xp-=p.level*100;p.level++;levels++;p.maxHp+=12;p.maxMp+=4;p.hp=p.maxHp;p.mp=p.maxMp;p.points++;}
+  log("Свиток опыта использован: +"+gained+" XP."+(levels?" Получено уровней: "+levels+".":" До следующего уровня: "+Math.max(0,p.level*100-p.xp)+" XP."));
+ }
+ else if(id==="potionpack"){p.potions+=10;log("Получено 10 зелий здоровья.")}
+ else if(id==="armor"){addItem({name:it.name,type:"armor",emoji:it.emoji,price:700,power:35,rarity:"epic"});log("Получен доспех лунного стража.")}
+ else if(id==="gems100"){p.gems+=100;log("Сундук кристаллов открыт: +100 💎.")}
+ else if(id==="coins"){p.coins+=1000;log("Получено 1000 монет из премиум-магазина.")}
+ else if(id==="blade"){addItem({name:it.name,type:"weapon",emoji:it.emoji,price:900,power:42,rarity:"legendary"});log("Куплен легендарный клинок премиум-рыцаря.")}
+ else if(id==="chest"){
+  const roll=Math.random(),rarity=roll<.04?"legendary":roll<.32?"epic":"rare";
+  const candidates=shop.filter(x=>["weapon","armor"].includes(x.type)&&x.rarity===rarity);
+  const chosen=candidates[random(0,candidates.length-1)];addItem({...chosen,uid:uid()});log("Премиум-сундук открыт: "+chosen.name+"!");
+ }
+ render();
+}
+function renderPremium(){
+ $("gemText").textContent=p.gems||0;
+ const active=(p.vipUntil||0)>Date.now();
+ $("vipText").textContent=active?("VIP "+(["","I","II","III","IV","V"][Math.max(1,Math.min(5,p.vipTier||1))]||"I")+" · до "+new Date(p.vipUntil).toLocaleDateString("ru-RU")):"Обычный игрок";
+ $("vipText").className=active?"vip":"";
+ const day=new Date().toISOString().slice(0,10);
+ $("dailyGem").disabled=p.lastGemDay===day;
+ $("dailyGem").textContent=p.lastGemDay===day?"✅ Ежедневные кристаллы уже получены":"🎁 Забрать ежедневные 5 кристаллов";
+ $("premiumList").innerHTML=premiumItems.map(x=>'<div class="item"><div>'+x.emoji+' <b>'+esc(x.name)+'</b><br><small>'+esc(x.desc)+'</small><br><span class="gem">'+x.price+' 💎</span></div><button data-premium="'+x.id+'" '+((p.gems||0)<x.price?'disabled':'')+'>Купить</button></div>').join("");
+}
+function redeemPromo(){
+  const input=$("promoCode"),msg=$("promoMessage"),code=input.value.trim().toUpperCase();
+  const rewards={
+    "AINCRAD2026":{gems:50,coins:250,desc:"+50 кристаллов и +250 монет"},
+    "WELCOME":{gems:25,coins:100,desc:"+25 кристаллов и +100 монет"},
+    "BOSSPOWER":{gems:35,coins:200,desc:"+35 кристаллов и +200 монет"},
+    "VIPTRIAL":{gems:20,coins:100,vipDays:1,desc:"+20 кристаллов, +100 монет и VIP на 1 день"}
+  };
+  if(!code){msg.textContent="Введи промокод.";return}
+  if(!Array.isArray(p.redeemedPromos))p.redeemedPromos=[];
+  if(p.redeemedPromos.includes(code)){msg.textContent="Этот промокод уже использован.";return}
+  const reward=rewards[code];
+  if(!reward){msg.textContent="Промокод не найден или недействителен.";return}
+  p.gems=(p.gems||0)+(reward.gems||0);p.coins=(p.coins||0)+(reward.coins||0);
+  if(reward.vipDays){p.vipUntil=Math.max(Date.now(),p.vipUntil||0)+reward.vipDays*24*60*60*1000;p.vipTier=Math.max(1,p.vipTier||0)}
+  p.redeemedPromos.push(code);msg.textContent="Успешно! Получено: "+reward.desc+".";input.value="";
+  log("Промокод "+code+" активирован: "+reward.desc+".");render();
+}
+function dailyGems(){const day=new Date().toISOString().slice(0,10);if(p.lastGemDay===day){log("Ежедневные кристаллы уже получены.");return}p.lastGemDay=day;p.gems=(p.gems||0)+5;log("Ежедневная награда: +5 премиум-кристаллов 💎");render()}
+function render(){
+ $("hpText").textContent=p.hp+" / "+p.maxHp;$("hpBar").style.width=100*p.hp/p.maxHp+"%";
+ $("mpText").textContent=p.mp+" / "+p.maxMp;$("mpBar").style.width=100*p.mp/p.maxMp+"%";
+ $("levelText").textContent=p.level;$("xpText").textContent=p.xp+" / "+p.level*100+" XP";
+ $("coinsText").textContent=p.coins;$("floorText").textContent="Этаж "+p.floor;
+ $("enemyName").textContent=p.enemy?p.enemy.name:"Противник побеждён";
+ $("enemyEmoji").textContent=p.enemy?p.enemy.emoji:"💨";
+ $("enemyHp").textContent=p.enemy?Math.max(0,p.enemy.hp)+" / "+p.enemy.maxHp+" HP":"Нажми атаку для нового противника";
+ $("enemyBar").style.width=p.enemy?Math.max(0,100*p.enemy.hp/p.enemy.maxHp)+"%":"0%";
+ $("attributes").innerHTML="<p>⚔️ Общий урон атаки: <b>"+attackPower()+"</b></p><p>🛡️ Общая защита: <b>"+defense()+"</b></p><p>Очки навыков: "+p.points+"</p><p>Победы: "+p.kills+"</p><p>Боссы: "+p.bossKills+"</p>";
+ $("equippedStats").innerHTML="<p>⚔️ Оружие: "+(p.weapon?esc(p.weapon.name)+" — урон +"+(p.weapon.power||0):"не надето — урон +0")+"</p><p>🛡️ Броня: "+(p.armor?esc(p.armor.name)+" — защита +"+(p.armor.power||0):"не надета — защита +0")+"</p>";
+ $("inventoryList").innerHTML=p.inventory.length?p.inventory.map(x=>'<div class="item"><div>'+x.emoji+" "+esc(x.name)+'<br>'+rarityTag(x.rarity)+(x.type==="material"?'<br><span class="qty">Количество: ×'+(x.qty||1)+'</span>':(x.type==="weapon"?'<br><b style="color:#ffb36b">⚔️ Урон: +'+(x.power||0)+'</b>':(x.type==="armor"?'<br><b style="color:#7ec8ff">🛡️ Защита: +'+(x.power||0)+'</b>':'')))+'<br><small>'+x.price+' монет за шт.</small></div>'+(["weapon","armor"].includes(x.type)?'<button data-equip="'+x.uid+'">Надеть</button>':'')+'<button data-sell="'+x.uid+'">Продать 1</button></div>').join(""):"<p>Инвентарь пуст.</p>";
+ let q=$("search").value.toLowerCase();
+ $("shopList").innerHTML=shop.filter(x=>x.name.toLowerCase().includes(q)).map(x=>'<div class="item"><div>'+x.emoji+" "+esc(x.name)+'<br>'+rarityTag(x.rarity)+(x.type==="weapon"?'<br><b style="color:#ffb36b">⚔️ Урон: +'+x.power+'</b>':(x.type==="armor"?'<br><b style="color:#7ec8ff">🛡️ Защита: +'+x.power+'</b>':''))+'<br><small>'+x.price+' монет</small></div><button data-buy="'+x.id+'" '+(p.coins<x.price?"disabled":"")+'>Купить</button></div>').join("");
+ $("auto").textContent=p.auto?"⏸️ Автобой: вкл.":"▶️ Автобой: выкл.";
+ renderLog();renderForge();renderPremium();renderAdmin();saveData();
+}
+let currentUser="";
+function saveData(){try{if(currentUser)localStorage.setItem("saoAincradSave_"+currentUser,JSON.stringify(p))}catch(e){} if(onlineToken)syncOnlineProfile();}
+function load(){
+ try{let raw=localStorage.getItem("saoAincradSave_"+currentUser);if(!raw)return;let d=JSON.parse(raw);if(!d||typeof d!=="object")return;p=Object.assign(fresh(),d);if(typeof p.floorKills!=="number")p.floorKills=0;if(!Array.isArray(p.inventory))p.inventory=[];if(!Array.isArray(p.log))p.log=[];if(typeof p.gems!=="number")p.gems=50;if(typeof p.vipUntil!=="number")p.vipUntil=0;if(typeof p.lastGemDay!=="string")p.lastGemDay="";if(typeof p.vipTier!=="number")p.vipTier=0;if(!Array.isArray(p.redeemedPromos))p.redeemedPromos=[];consolidateInventory();if(p.enemy&&typeof p.enemy!=="object")p.enemy=null}catch(e){p=fresh()}
+}
+function reset(){if(!confirm("Начать новую игру?"))return;localStorage.removeItem("saoAincradSave_"+currentUser);p=fresh();p.enemy=newEnemy();render();log("Новая игра началась.")}
+document.querySelectorAll("[data-tab]").forEach(b=>b.addEventListener("click",()=>{
+ document.querySelectorAll(".page").forEach(s=>s.classList.remove("active"));
+ document.querySelectorAll("[data-tab]").forEach(s=>s.style.background="#304966");
+ $(b.dataset.tab).classList.add("active");b.style.background="#8d5c17";
+}));
+$("attack").onclick=()=>{if(!p.enemy)spawn();hit(false)};
+$("skill").onclick=()=>{if(!p.enemy)spawn();hit(true)};
+$("potion").onclick=potion;$("rest").onclick=rest;$("boss").onclick=boss;$("nextFloor").onclick=nextFloor;
+$("auto").onclick=()=>{p.auto=!p.auto;render()};
+$("currentFloor").onclick=()=>log("Ты находишься на этаже "+p.floor+". Побед на этаже: "+(p.floorKills||0)+"/3.");
+$("upgrade").onclick=upgrade;
+$("applyCharacter").onclick=()=>{p.race=$("race").value;p.job=$("job").value;log("Персонаж: "+p.race+", профессия: "+p.job);render()};
+$("save").onclick=()=>{saveData();log("Сохранение выполнено.")};
+$("reset").onclick=reset;
+$("dailyGem").onclick=dailyGems;$("redeemPromo").onclick=redeemPromo;
+$("search").addEventListener("input",render);
+document.addEventListener("click",e=>{
+ let b=e.target.closest("button");if(!b)return;
+ if(b.dataset.buy)buy(b.dataset.buy);
+ if(b.dataset.sell)sell(b.dataset.sell);
+ if(b.dataset.equip)equip(b.dataset.equip);
+ if(b.dataset.craft!==undefined)craft(Number(b.dataset.craft));
+ if(b.dataset.premium)buyPremium(b.dataset.premium);
+});
+function isAdmin(){return currentUser===ADMIN_NICK.toLowerCase()}
+function renderAdmin(){
+ const tab=$("adminTab");if(!tab)return;tab.style.display=isAdmin()?"inline-block":"none";
+ if(!isAdmin())return;
+ const select=$("adminUser");if(!select)return;
+ const names=[];for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&k.startsWith("saoAincradUser_"))names.push(k.slice("saoAincradUser_".length));}
+ names.sort();const previous=select.value;select.innerHTML=names.map(n=>'<option value="'+esc(n)+'">'+esc(n)+'</option>').join("");if(names.includes(previous))select.value=previous;
+ $("adminAccounts").innerHTML="<p>Профилей на этом устройстве: <b>"+names.length+"</b></p><p>Список логинов: "+(names.map(esc).join(", ")||"нет")+"</p>";
+}
+function adminLoad(){
+ if(!isAdmin())return;
+ const name=$("adminUser").value;if(!name)return;
+ let d={};try{d=JSON.parse(localStorage.getItem("saoAincradSave_"+name)||"{}")}catch(e){}
+ $("adminCoins").value=Math.max(0,Number(d.coins)||0);
+ $("adminGems").value=Math.max(0,Number(d.gems)||0);
+ $("adminXp").value=Math.max(0,Number(d.xp)||0);
+ $("adminLevel").value=Math.max(1,Number(d.level)||1);
+ $("adminVipDays").value=0;
+ $("adminVipTier").value=String(Math.max(1,Math.min(5,Number(d.vipTier)||1)));
+ $("adminMessage").textContent="Данные профиля "+name+" загружены.";
+}
+function adminApply(){
+ if(!isAdmin())return;
+ const name=$("adminUser").value;if(!name){$("adminMessage").textContent="Сначала выбери профиль игрока.";return;}
+ let d;try{d=JSON.parse(localStorage.getItem("saoAincradSave_"+name)||"null")}catch(e){}
+ if(!d||typeof d!=="object")d=fresh();
+ d=Object.assign(fresh(),d);
+ d.coins=Math.max(0,Math.floor(Number($("adminCoins").value)||0));
+ d.gems=Math.max(0,Math.floor(Number($("adminGems").value)||0));
+ d.xp=Math.max(0,Math.floor(Number($("adminXp").value)||0));
+ d.level=Math.min(999,Math.max(1,Math.floor(Number($("adminLevel").value)||1)));
+ let levelsGained=0;
+ while(d.level<999 && d.xp>=d.level*100){d.xp-=d.level*100;d.level++;levelsGained++;d.maxHp=(Number(d.maxHp)||100)+12;d.maxMp=(Number(d.maxMp)||40)+4;d.hp=d.maxHp;d.mp=d.maxMp;d.points=(Number(d.points)||0)+1;}
+ const vipDays=Math.min(3650,Math.max(0,Math.floor(Number($("adminVipDays").value)||0)));
+ if(vipDays>0){d.vipUntil=Math.max(Date.now(),Number(d.vipUntil)||0)+vipDays*86400000;d.vipTier=Math.min(5,Math.max(1,Math.floor(Number($("adminVipTier").value)||1)));}
+ try{localStorage.setItem("saoAincradSave_"+name,JSON.stringify(d));}
+ catch(e){$("adminMessage").textContent="Не удалось сохранить данные. Возможно, память браузера заполнена.";return;}
+ if(name===currentUser){p=Object.assign(fresh(),d);render();}
+ $("adminMessage").textContent="Готово! Награды сохранены для "+name+". Получено уровней за XP: "+levelsGained+(vipDays>0?". VIP выдан на "+vipDays+" дн.":".");
+ renderAdmin();adminLoad();
+}
+function authKey(name){return "saoAincradUser_"+name.toLowerCase()}
+function enterGame(name){currentUser=name.toLowerCase();p=fresh();load();if(!p.enemy)p.enemy=newEnemy();$("loginScreen").style.display="none";$("gameRoot").style.display="block";render();log("Вход выполнен: "+name);}
+function authValues(){const name=$("loginName").value.trim();const pass=$("loginPassword").value;if(!/^[A-Za-zА-Яа-яЁё0-9_-]{3,24}$/.test(name)){ $("loginError").textContent="Логин: 3–24 символа, буквы, цифры, _ или -.";return null;}if(pass.length<4){$("loginError").textContent="Пароль должен содержать минимум 4 символа.";return null;}return {name,pass};}
+$("registerBtn").onclick=()=>{const v=authValues();if(!v)return;const key=authKey(v.name);if(v.name.toLowerCase()===ADMIN_NICK.toLowerCase()&&v.pass!==ADMIN_PASSWORD){$("loginError").textContent="Для профиля администратора Pollag используется заданный пароль.";return;}if(localStorage.getItem(key)){ $("loginError").textContent="Такой логин уже существует на этом устройстве.";return;}try{localStorage.setItem(key,JSON.stringify({password:v.pass}));$("loginError").textContent="Профиль создан. Выполняется вход…";enterGame(v.name);}catch(e){$("loginError").textContent="Не удалось сохранить профиль в браузере.";}};
+$("loginBtn").onclick=()=>{const v=authValues();if(!v)return;let saved;try{saved=JSON.parse(localStorage.getItem(authKey(v.name))||"null")}catch(e){}const adminLogin=v.name.toLowerCase()===ADMIN_NICK.toLowerCase()&&v.pass===ADMIN_PASSWORD;if(adminLogin){try{localStorage.setItem(authKey(v.name),JSON.stringify({password:ADMIN_PASSWORD}));}catch(e){}}else if(!saved||saved.password!==v.pass){$("loginError").textContent="Неверный логин или пароль. Если профиля нет — создай его.";return;}enterGame(v.name);};
+$("adminLoad").onclick=adminLoad;$("adminUser").addEventListener("change",adminLoad);$("adminApply").onclick=adminApply;
+$("loginPassword").addEventListener("keydown",e=>{if(e.key==="Enter")$("loginBtn").click()});
+
+setInterval(()=>{if(p.auto){if(!p.enemy)p.enemy=newEnemy();hit(false)}},1600);
+let onlineToken=localStorage.getItem("saoOnlineToken")||"";
+function apiBase(){return $("serverUrl").value.trim().replace(/\/+$/,"")}
+async function api(path,method="GET",body=null){
+ const base=apiBase(); if(!/^https?:\/\//i.test(base))throw new Error("Сначала введи адрес сервера.");
+ const headers={"Content-Type":"application/json"};if(onlineToken)headers.Authorization="Bearer "+onlineToken;
+ const r=await fetch(base+path,{method,headers,body:body?JSON.stringify(body):undefined});
+ const d=await r.json().catch(()=>({error:"Сервер вернул неверный ответ."}));
+ if(!r.ok)throw new Error(d.error||("Ошибка "+r.status));return d;
+}
+async function onlineAuth(mode){
+ const msg=$("onlineMessage");msg.textContent="Подключение…";
+ try{const d=await api("/"+mode,"POST",{username:$("onlineUser").value.trim(),password:$("onlinePass").value});
+ onlineToken=d.token;localStorage.setItem("saoOnlineToken",onlineToken);msg.textContent="Онлайн-вход выполнен: "+d.username;
+ await refreshRank();await refreshChat();await syncOnlineProfile();
+ }catch(e){msg.textContent=e.message}
+}
+async function syncOnlineProfile(){
+ try{await api("/profile","POST",{level:p.level,coins:p.coins,floor:p.floor,kills:p.kills});}catch(e){}
+}
+async function refreshRank(){
+ try{const d=await api("/leaderboard");$("onlineRank").innerHTML=d.players.length?d.players.map((x,i)=>'<div class="item"><div><b>#'+(i+1)+' '+esc(x.username)+'</b><br><small>Уровень '+x.level+' · этаж '+x.floor+' · победы '+x.kills+'</small></div></div>').join(""):"<p>Пока нет игроков в рейтинге.</p>";}
+ catch(e){$("onlineRank").textContent=e.message}
+}
+async function refreshChat(){
+ try{const d=await api("/chat");$("onlineChat").innerHTML=d.messages.map(x=>'<div class="item"><div><b>'+esc(x.username)+'</b><br>'+esc(x.message)+'<br><small>'+new Date(x.created_at).toLocaleString("ru-RU")+'</small></div></div>').join("")||"<p>Чат пуст.</p>";}
+ catch(e){$("onlineChat").textContent=e.message}
+}
+$("onlineRegister").onclick=()=>onlineAuth("register");
+$("onlineLogin").onclick=()=>onlineAuth("login");
+$("refreshRank").onclick=refreshRank;
+$("sendChat").onclick=async()=>{try{await api("/chat","POST",{message:$("chatMessage").value});$("chatMessage").value="";await refreshChat()}catch(e){$("onlineMessage").textContent=e.message}};
+
+
+$("connectOnline").onclick=async()=>{
+ const raw=$("serverUrl").value.trim(), status=$("onlineStatus"), msg=$("onlineMessage"), players=$("onlinePlayers");
+ let url;
+ try{url=new URL(raw);if(!["https:","http:"].includes(url.protocol))throw new Error();}
+ catch(e){msg.textContent="Введи корректный адрес сервера (обычно https://...).";return;}
+ status.textContent="Проверка подключения…";msg.textContent="";players.textContent="";
+ try{
+   const response=await fetch(url.href.replace(/\/$/,"")+"/status",{method:"GET",headers:{"Accept":"application/json"}});
+   if(!response.ok)throw new Error("HTTP "+response.status);
+   const data=await response.json();
+   if(data.online!==true)throw new Error("Сервер ответил, но не подтвердил поддержку онлайна.");
+   status.textContent="Подключён";msg.textContent="Связь с сервером установлена.";
+   players.textContent="Игроков онлайн: "+(Number(data.players)||0);
+ }catch(e){status.textContent="Не подключён";msg.textContent="Сервер недоступен или не поддерживает API /status. Сам HTML-файл не создаёт сервер; для настоящей общей игры нужно развернуть серверную часть.";}
+};
+
+</script>
+</body>
+</html>
